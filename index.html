@@ -25,8 +25,8 @@
         <div class="navbar-end">
           <a class="navbar-item" href="#abstract" data-text="nav.abstract">Abstract</a>
           <a class="navbar-item" href="#method" data-text="nav.method">Method</a>
-          <a class="navbar-item" href="#videos" data-text="nav.videos">Videos</a>
           <a class="navbar-item" href="#image-comparisons" data-text="nav.images">Images</a>
+          <a class="navbar-item" href="#navbar-to-videos" data-text="nav.videos">Videos</a>
           <a class="navbar-item" href="#results" data-text="nav.results">Results</a>
           <a class="navbar-item" href="#bibtex" data-text="nav.bibtex">BibTeX</a>
           <button id="theme-toggle" class="navbar-item theme-toggle" type="button" aria-label="Toggle light/dark theme">
@@ -89,32 +89,41 @@
   </section>
 
   <section id="videos" class="section section-pad">
-    <div class="container is-max-widescreen">
-      <div class="section-heading centered" data-heading="largeScaleVideos"></div>
+  <div class="container is-max-widescreen">
+    <div class="section-heading centered" data-heading="largeScaleVideos"></div>
 
-      <div class="subsection-block">
-        <div class="section-heading compact" data-heading="cameraWalkthrough"></div>
-        <div id="large-scale-camera-walkthrough"></div>
-      </div>
-
-      <div class="subsection-block">
-        <div class="section-heading compact" data-heading="lightStress"></div>
-        <div id="light-stress-comparison"></div>
-      </div>
-
-      <div class="subsection-block" id="image-comparisons">
-        <div class="section-heading compact" data-heading="paperQualitative"></div>
-        <div id="paper-qualitative-comparison"></div>
-      </div>
+    <div class="subsection-block" id="image-comparisons">
+      <div class="section-heading compact" data-heading="paperQualitative"></div>
+      <div id="paper-qualitative-comparison"></div>
     </div>
-  </section>
 
-  <section id="garden" class="section section-pad alt-bg">
-    <div class="container is-max-widescreen">
-      <div class="section-heading centered" data-heading="garden"></div>
+    <div id="navbar-to-videos" class="subsection-block">
+      <div class="section-heading compact" data-heading="cameraWalkthrough"></div>
+      <div id="large-scale-camera-walkthrough"></div>
+    </div>
+
+    <div class="subsection-block">
+      <div class="section-heading compact" data-heading="lightStress"></div>
+      <div id="light-stress-comparison"></div>
+    </div>
+  </div>
+</section>
+
+<section id="garden" class="section section-pad alt-bg">
+  <div class="container is-max-widescreen">
+    <div class="section-heading centered">
+      <h2>Small-Scale 3D Reconstruction Qualitative Comparison</h2>
+      <p>Qualitative comparison on the Garden scene against small-scale reconstruction methods.</p>
+    </div>
+
+    <div class="subsection-block">
+      <div class="section-heading compact" data-heading="garden"></div>
       <div id="garden-dual-sync"></div>
     </div>
-  </section>
+  </div>
+</section>
+
+
 
   <section id="results" class="section section-pad">
     <div class="container is-max-widescreen">
@@ -133,7 +142,12 @@
   <section id="bibtex" class="section section-pad">
     <div class="container is-max-desktop">
       <div class="section-heading centered" data-heading="bibtex"></div>
-      <pre class="bibtex"><code id="bibtex-code"></code></pre>
+      <div class="bibtex-wrap">
+        <button id="copy-bibtex" class="button is-small is-rounded copy-bibtex" type="button">
+          <span class="icon"><i class="fa-regular fa-copy"></i></span><span>Copy</span>
+        </button>
+        <pre class="bibtex"><code id="bibtex-code"></code></pre>
+      </div>
     </div>
   </section>
 

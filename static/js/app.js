@@ -110,11 +110,19 @@
     if (!container) return;
     container.innerHTML = "";
     if (media?.kind === "image" && S.hasPath(media.src)) {
+      container.classList.add("is-media-loading");
       const img = el("img");
       img.loading = opts.eager ? "eager" : "lazy";
-      img.src = media.src;
       img.alt = media.alt || "";
-      container.appendChild(img);
+      const overlay = makeLoadingOverlay("Loading image…", "image-loading-overlay");
+      const done = () => { container.classList.remove("is-media-loading"); overlay.hidden = true; };
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", () => {
+        container.innerHTML = "";
+        container.appendChild(S.makePlaceholder(media?.placeholderLabel || media?.alt || "Image unavailable", media?.color, "Could not load image file"));
+      }, { once: true });
+      container.append(img, overlay);
+      img.src = media.src;
     } else if (media?.kind === "video" && S.hasPath(media.src)) {
       const v = el("video", "simple-video");
       v.src = media.src;
@@ -138,7 +146,32 @@
 
   function renderAbstract() {
     const wrap = $("#abstract-text");
-    wrap.innerHTML = (D.abstract || []).map(p => `<p>${S.escapeHtml(p)}</p>`).join("");
+    const paragraphs = D.abstract || [];
+    const ui = D.abstractUi || {};
+    const previewCount = Math.max(0, Number(ui.previewParagraphs ?? 1));
+    const readMoreLabel = ui.readMoreLabel || "Read full abstract";
+    const showLessLabel = ui.showLessLabel || "Show less";
+    const tldr = D.abstractTldr || D.tldr ||
+      "City-Mesh3R reconstructs explicit, watertight, simulation-ready city-scale meshes from unordered multi-view images. It scales through distributed sparse-to-dense reconstruction, geometry-aware partitioning, and curvature-aware adaptive remeshing.";
+    const preview = paragraphs.slice(0, previewCount).map(p => `<p class="abstract-preview">${S.escapeHtml(p)}</p>`).join("");
+    // Only reveal the paragraphs that are not already visible in the preview.
+    const full = paragraphs.slice(previewCount).map(p => `<p>${S.escapeHtml(p)}</p>`).join("");
+    wrap.innerHTML = `
+      <div class="abstract-tldr"><h3>TL;DR</h3><p>${S.escapeHtml(tldr)}</p></div>
+      ${preview}
+      ${full ? `<button class="button is-small is-rounded abstract-toggle" type="button" aria-expanded="false">
+        <span>${S.escapeHtml(readMoreLabel)}</span><span class="icon"><i class="fa-solid fa-chevron-down"></i></span>
+      </button>
+      <div class="abstract-full" hidden>${full}</div>` : ""}`;
+    const btn = wrap.querySelector(".abstract-toggle");
+    const fullBox = wrap.querySelector(".abstract-full");
+    btn?.addEventListener("click", () => {
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", expanded ? "false" : "true");
+      fullBox.hidden = expanded;
+      btn.querySelector("span:first-child").textContent = expanded ? readMoreLabel : showLessLabel;
+      btn.querySelector("i").className = expanded ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+    });
   }
 
   function renderCards(target, items) {
@@ -146,8 +179,10 @@
     if (!root) return;
     root.innerHTML = (items || []).map(item => `
       <article class="info-card">
-        <div class="card-icon"><i class="${S.escapeHtml(item.icon || "fa-solid fa-circle")}"></i></div>
-        <h3>${S.escapeHtml(item.title)}</h3>
+        <div class="info-card-head">
+          <div class="card-icon"><i class="${S.escapeHtml(item.icon || "fa-solid fa-circle")}"></i></div>
+          <h3>${S.escapeHtml(item.title)}</h3>
+        </div>
         <p>${S.escapeHtml(item.text)}</p>
       </article>`).join("");
   }
@@ -158,19 +193,76 @@
     return `<div class="meta-chips">${entries.map(([k, v]) => `<span><b>${S.escapeHtml(k)}</b>${S.escapeHtml(v)}</span>`).join("")}</div>`;
   }
 
+  function optionValue(v) { return v.key || v.id || String(v); }
+
   function makeSelect(label, values, selected, getLabel = x => x.label || x.title || x.id || x.key || x) {
-    const wrap = el("label", "control-label");
-    wrap.appendChild(document.createTextNode(label));
-    const select = el("select", "select-input");
-    values.forEach(v => {
-      const opt = el("option");
-      opt.value = v.key || v.id || String(v);
-      opt.textContent = getLabel(v);
-      if (opt.value === selected) opt.selected = true;
-      select.appendChild(opt);
-    });
-    wrap.appendChild(select);
-    return { wrap, select };
+    const wrap = el("label", "control-label choice-control");
+    wrap.appendChild(el("span", "choice-label", S.escapeHtml(label)));
+    const select = el("select", "select-input choice-select");
+    const buttons = el("div", "choice-buttons");
+    wrap.append(select, buttons);
+
+    const syncButtons = () => {
+      buttons.querySelectorAll("button").forEach(btn => btn.classList.toggle("is-active", btn.dataset.value === select.value));
+    };
+    const fill = (items, selectedValue) => {
+      select.innerHTML = "";
+      buttons.innerHTML = "";
+      items.forEach(v => {
+        const value = optionValue(v);
+        const labelText = getLabel(v);
+        const opt = el("option");
+        opt.value = value;
+        opt.textContent = labelText;
+        if (value === selectedValue) opt.selected = true;
+        select.appendChild(opt);
+        const btn = el("button", "button is-small is-rounded choice-button", S.escapeHtml(labelText));
+        btn.type = "button";
+        btn.dataset.value = value;
+        btn.addEventListener("click", () => {
+          if (select.value === value) return;
+          select.value = value;
+          syncButtons();
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        buttons.appendChild(btn);
+      });
+      if (selectedValue && !items.some(v => optionValue(v) === selectedValue)) select.value = optionValue(items[0] || "");
+      syncButtons();
+    };
+    fill(values, selected);
+    select.addEventListener("change", syncButtons);
+    return { wrap, select, buttons, setOptions: fill };
+  }
+
+
+  function setupResponsiveControlMode(controls) {
+    if (!controls || controls.dataset.responsiveControlWired) return;
+    controls.dataset.responsiveControlWired = "1";
+    const breakpoint = D.mediaDefaults?.wideBreakpointPx || 880;
+    const update = () => {
+      // If called before the controls are attached to the DOM, wait; otherwise
+      // clientWidth is 0 and desktop button rows get incorrectly forced into dropdown mode.
+      if (!controls.isConnected || controls.clientWidth < 10) {
+        requestAnimationFrame(update);
+        return;
+      }
+      if (window.innerWidth <= breakpoint) {
+        controls.classList.remove("force-dropdown-controls");
+        return;
+      }
+      controls.classList.remove("force-dropdown-controls");
+      const visibleChoices = $$(".choice-control", controls).filter(node => getComputedStyle(node).display !== "none");
+      const playback = $(".playback-buttons", controls);
+      const choiceWidth = visibleChoices.reduce((sum, node) => sum + (node.querySelector(".choice-buttons")?.scrollWidth || node.scrollWidth || 0), 0);
+      const playbackWidth = playback && getComputedStyle(playback).display !== "none" ? playback.scrollWidth : 0;
+      const gaps = Math.max(0, visibleChoices.length) * 12;
+      if (choiceWidth + playbackWidth + gaps > Math.max(controls.clientWidth - 8, 1)) controls.classList.add("force-dropdown-controls");
+    };
+    controls._responsiveControlUpdate = update;
+    requestAnimationFrame(update);
+    window.addEventListener("resize", update, { passive: true });
+    if ("ResizeObserver" in window) new ResizeObserver(update).observe(controls);
   }
 
   function playbackButtons(showControls, opts = {}) {
@@ -197,8 +289,18 @@
     return card;
   }
 
+  function makeLoadingOverlay(message, className = "video-loading-overlay") {
+    const overlay = el("div", className);
+    overlay.innerHTML = `<div class="video-loading-box"><span class="video-spinner" aria-hidden="true"></span><span class="video-loading-text">${S.escapeHtml(message)}</span></div>`;
+    return overlay;
+  }
+
   function collectVideos(sliders) {
     return sliders.flatMap(slider => slider?.getVideos ? slider.getVideos() : []);
+  }
+
+  function collectImages(sliders) {
+    return sliders.flatMap(slider => slider?.getImages ? slider.getImages() : []);
   }
 
   function setGroupLoading(root, controls, isLoading, message = "Loading synced videos…") {
@@ -206,8 +308,7 @@
     root.classList.toggle("is-video-loading", Boolean(isLoading));
     let overlay = root.querySelector(":scope > .video-loading-overlay");
     if (!overlay) {
-      overlay = el("div", "video-loading-overlay");
-      overlay.innerHTML = `<div class="video-loading-box"><span class="video-spinner" aria-hidden="true"></span><span class="video-loading-text"></span></div>`;
+      overlay = makeLoadingOverlay(message, "video-loading-overlay");
       root.appendChild(overlay);
     }
     text(overlay.querySelector(".video-loading-text"), message);
@@ -238,7 +339,7 @@
       controls._resetVisuals = () => sliders.forEach(slider => slider?.setRatio?.(resetRatio));
     }
 
-    const api = S.syncVideos(collectVideos(sliders), controls, { autoplay: false });
+    const api = S.syncVideos(collectVideos(sliders), controls, { autoplay: false, loop: opts?.loop !== false });
     const token = String((Number(card.dataset.hydrateToken || 0) + 1));
     card.dataset.hydrateToken = token;
 
@@ -262,6 +363,7 @@
       setGroupLoading(loadingRoot || card, controls, false);
       controls?._resetVisuals?.();
       api.restart(Boolean(opts?.autoplayOnVisible));
+      if (opts?.sliderAnimation?.enabledByDefault) controls?._sliderAnimation?.start?.();
       const failed = (results || []).some(r => !r.ok);
       if (failed) console.warn("[City-Mesh3R] One or more synced videos did not become ready cleanly.", results);
     }).catch(err => {
@@ -274,6 +376,34 @@
       S.waitForVideoGroupReady(videos, readyOpts).finally(() => api.restart(Boolean(opts?.autoplayOnVisible)));
     });
     return api;
+  }
+
+  function hydrateImageSliders(card, sliders, controls, opts = {}, loadingRoot) {
+    controls?._sliderAnimation?.stop?.();
+    const resetRatio = Number(opts?.initialSlider ?? D.mediaDefaults?.initialSlider ?? 0.5);
+    if (controls) controls._resetVisuals = () => sliders.forEach(slider => slider?.setRatio?.(resetRatio));
+    wireSliderAnimationButton(controls);
+    controls._sliderAnimation = S.createSliderAnimation(sliders, {
+      min: opts?.sliderAnimation?.min ?? D.mediaDefaults?.sliderAnimation?.min ?? 0.2,
+      max: opts?.sliderAnimation?.max ?? D.mediaDefaults?.sliderAnimation?.max ?? 0.8,
+      speed: opts?.sliderAnimation?.speed ?? D.mediaDefaults?.sliderAnimation?.speed ?? 0.12,
+      initial: resetRatio,
+      onStateChange: (running) => setAnimateButtonState(controls, running)
+    });
+    setAnimateButtonState(controls, false);
+    if (controls && !controls.dataset.imageResetWired) {
+      controls.dataset.imageResetWired = "1";
+      controls.querySelector("[data-action='restart']")?.addEventListener("click", () => {
+        controls._sliderAnimation?.stop?.();
+        controls._resetVisuals?.();
+      });
+    }
+    setGroupLoading(loadingRoot || card, controls, true, "Loading comparison images…");
+    S.preloadImageGroup(collectImages(sliders), { timeoutMs: opts?.imageReadyTimeoutMs || 30000 }).finally(() => {
+      setGroupLoading(loadingRoot || card, controls, false);
+      controls?._resetVisuals?.();
+      if (opts?.sliderAnimation?.enabledByDefault) controls?._sliderAnimation?.start?.();
+    });
   }
 
   function getVideoBlockType(key, cfg) {
@@ -342,7 +472,16 @@
 
   function createResponsiveVideoComparison(cfg, baselines, options = {}) {
     const defaults = D.mediaDefaults || {};
-    const controlsCfg = { ...defaults, ...(cfg.controls || {}), ...(options.controls || {}) };
+    const controlsCfg = {
+      ...defaults,
+      ...(cfg.controls || {}),
+      ...(options.controls || {}),
+      sliderAnimation: {
+        ...(defaults.sliderAnimation || {}),
+        ...(cfg.sliderAnimation || {}),
+        ...(options.sliderAnimation || {})
+      }
+    };
     const card = makeWidgetShell("", "", null);
     const sceneCtl = makeSelect("Scene", cfg.scenes, cfg.scenes[0]?.id, x => x.title);
     const baselineCtl = makeSelect("Compare against", baselines, baselines[0]?.key, x => x.label);
@@ -350,6 +489,7 @@
 
     const controls = el("div", "widget-controls wrap-controls");
     controls.append(sceneCtl.wrap, baselineCtl.wrap, playbackButtons(Boolean(controlsCfg.showControls), { resetOnly: true }));
+    setupResponsiveControlMode(controls);
     card.appendChild(controls);
 
     const content = el("div", "responsive-comparison-content");
@@ -438,7 +578,8 @@
     const baselineCtl = makeSelect("Compare against", cfg.baselines, cfg.baselines[0]?.key, x => x.label);
     baselineCtl.wrap.classList.add("mobile-only-control");
     const controls = el("div", "widget-controls wrap-controls");
-    controls.append(sceneCtl.wrap, viewCtl.wrap, baselineCtl.wrap);
+    controls.append(sceneCtl.wrap, viewCtl.wrap, baselineCtl.wrap, playbackButtons(false, { resetOnly: true }));
+    setupResponsiveControlMode(controls);
     const content = el("div", "paper-qual-content");
     card.append(controls, content);
 
@@ -449,22 +590,17 @@
 
     function updateViewOptions(scene) {
       const old = viewCtl.select.value;
-      viewCtl.select.innerHTML = "";
-      scene.views.forEach(v => {
-        const opt = el("option");
-        opt.value = v.id; opt.textContent = v.label;
-        if (v.id === old) opt.selected = true;
-        viewCtl.select.appendChild(opt);
-      });
-      if (!scene.views.some(v => v.id === old)) viewCtl.select.value = scene.views[0]?.id;
+      viewCtl.setOptions(scene.views, scene.views.some(v => v.id === old) ? old : scene.views[0]?.id);
+      requestAnimationFrame(() => controls._responsiveControlUpdate?.());
     }
 
     function render() {
+      controls._sliderAnimation?.stop?.();
       const scene = sceneById(sceneCtl.select.value);
       updateViewOptions(scene);
       const view = scene.views.find(v => v.id === viewCtl.select.value) || scene.views[0];
       const selectedBaseline = baselineByKey(baselineCtl.select.value);
-      currentRatio = D.mediaDefaults?.initialSlider || 0.5;
+      currentRatio = cfg.resetSliderOnChange === false ? currentRatio : (cfg.initialSlider ?? D.mediaDefaults?.initialSlider ?? 0.5);
       content.innerHTML = "";
       const chips = metadataChips(scene.metadata);
       if (chips) content.insertAdjacentHTML("beforeend", chips);
@@ -519,7 +655,11 @@
       content.append(wide, narrow);
       const isNarrow = window.matchMedia(`(max-width: ${D.mediaDefaults?.wideBreakpointPx || 880}px)`).matches;
       const activeSliders = isNarrow ? Array.from(narrow.querySelectorAll(".comparison-slider")) : Array.from(wide.querySelectorAll(".comparison-slider"));
-      if (lazyReady) activeSliders.forEach(s => s.loadMedia());
+      requestAnimationFrame(() => controls._responsiveControlUpdate?.());
+      if (lazyReady) hydrateImageSliders(card, activeSliders, controls, {
+        initialSlider: cfg.initialSlider ?? D.mediaDefaults?.initialSlider,
+        sliderAnimation: { ...(D.mediaDefaults?.sliderAnimation || {}), ...(cfg.sliderAnimation || {}) }
+      }, content);
     }
 
     sceneCtl.select.addEventListener("change", render);
@@ -535,6 +675,7 @@
     const baselineCtl = makeSelect("Compare against", cfg.baselines, cfg.baselines[0]?.key, x => x.label);
     const controls = el("div", "widget-controls wrap-controls");
     controls.append(baselineCtl.wrap, playbackButtons(Boolean(cfg.controls?.showControls), { resetOnly: true }));
+    setupResponsiveControlMode(controls);
     const content = el("div", "garden-comparison-grid");
     card.append(controls, content);
 
@@ -574,7 +715,14 @@
         content.appendChild(block);
         return slider;
       });
-      if (lazyReady) activeApi = hydrateSliders(card, sliders, controls, cfg.controls, content);
+      if (lazyReady) {
+        const gardenOpts = {
+          ...(cfg.controls || {}),
+          initialSlider: cfg.initialSlider ?? D.mediaDefaults?.initialSlider,
+          sliderAnimation: { ...(D.mediaDefaults?.sliderAnimation || {}), ...(cfg.sliderAnimation || {}) }
+        };
+        activeApi = hydrateSliders(card, sliders, controls, gardenOpts, content);
+      }
     }
 
     baselineCtl.select.addEventListener("change", render);
@@ -619,6 +767,27 @@
   function renderBibtex() {
     text($("#bibtex-code"), D.bibtex || "");
     text($("#footer-text"), D.footer || "");
+    const btn = $("#copy-bibtex");
+    btn?.addEventListener("click", async () => {
+      const value = $("#bibtex-code")?.innerText || "";
+      const label = btn.querySelector("span:last-child");
+      const oldLabel = label?.textContent || "Copy";
+      try {
+        await navigator.clipboard.writeText(value);
+        if (label) label.textContent = "Copied";
+      } catch (_) {
+        const range = document.createRange();
+        const code = $("#bibtex-code");
+        if (code) {
+          range.selectNodeContents(code);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(range);
+          try { document.execCommand("copy"); if (label) label.textContent = "Copied"; } catch (_) {}
+          sel.removeAllRanges();
+        }
+      }
+      setTimeout(() => { if (label) label.textContent = oldLabel; }, 1400);
+    }, { once: false });
   }
 
   function main() {

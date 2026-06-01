@@ -501,3 +501,109 @@ code, pre, .bibtex { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular
   opacity: 0.55;
   cursor: wait;
 }
+
+/* Compact abstract, cards, selectors, image loading, and BibTeX copy */
+.abstract-tldr {
+  margin-bottom: 1.1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--brand) 10%, var(--card-solid));
+}
+.abstract-tldr h3 {
+  margin: 0 0 0.35rem 0;
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--brand-dark);
+  letter-spacing: -0.03em;
+}
+.abstract-tldr p { margin: 0; color: var(--text); line-height: 1.62; }
+.abstract-preview { margin-bottom: 0.9rem; }
+.abstract-toggle {
+  margin-top: 0.2rem;
+  background: var(--card-solid) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+.abstract-full { margin-top: 1rem; }
+.abstract-full p + p { margin-top: 1.1rem; }
+
+.info-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.info-card-head .card-icon {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+.info-card-head h3 { margin-bottom: 0; }
+
+.choice-control {
+  min-width: min(100%, 180px);
+}
+.choice-label { color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+.choice-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.choice-button {
+  background: var(--card-solid) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+  font-weight: 800;
+}
+.choice-button.is-active {
+  border-color: var(--brand) !important;
+  color: var(--brand-dark) !important;
+  background: color-mix(in srgb, var(--brand) 16%, var(--card-solid)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+.choice-select { display: none; }
+.widget-controls .playback-buttons { margin-left: auto; }
+
+.media-frame,
+.comparison-slider {
+  position: relative;
+}
+.image-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--card-solid) 70%, transparent);
+  backdrop-filter: blur(7px);
+}
+.image-loading-overlay[hidden] { display: none; }
+
+.bibtex-wrap {
+  position: relative;
+}
+.copy-bibtex {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  background: color-mix(in srgb, var(--card-solid) 88%, var(--brand)) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+.bibtex-wrap .bibtex { padding-top: 3.1rem; }
+
+@media (max-width: 880px) {
+  .choice-buttons { display: none; }
+  .choice-select { display: block; }
+  .widget-controls .playback-buttons {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+@media (min-width: 881px) {
+  .widget-controls.force-dropdown-controls .choice-buttons { display: none; }
+  .widget-controls.force-dropdown-controls .choice-select { display: block; }
+}
+.paper-qual-content { position: relative; }

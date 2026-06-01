@@ -30,8 +30,10 @@ window.CITYMESH3R_DATA = {
     },
     links: [
       { label: "Paper", icon: "ai ai-arxiv", href: "https://arxiv.org/abs/2605.30310" },
+      { label: "Qualitative Images", icon: "fas fa-image", href: "#image-comparisons" },
       { label: "Qualitative Videos", icon: "fas fa-play", href: "#videos" },
       { label: "BibTeX", icon: "fas fa-quote-right", href: "#bibtex" }
+      
     ]
   },
 
@@ -91,6 +93,15 @@ window.CITYMESH3R_DATA = {
     }
   },
 
+  abstractTldr: "City-Mesh3R reconstructs explicit, watertight, simulation-ready city-scale meshes from unordered multi-view images. It scales through distributed sparse-to-dense reconstruction, geometry-aware partitioning, and adaptive remeshing, producing cleaner geometry and normals than large-scale GS-based mesh extraction baselines.",
+
+  abstractUi: {
+    collapsedByDefault: true,
+    previewParagraphs: 1,
+    readMoreLabel: "Read full abstract",
+    showLessLabel: "Show less"
+  },
+
   abstract: [
     "City-scale 3D surface reconstruction from multiview images for downstream 3D simulation, poses highly challenging problems due to the scale and complexity of urban scenes. Existing city-scale 3D reconstruction methods based on NeRF, Gaussian Splatting etc. often fail to recover 3D meshes ready for simulation due to incomplete/missing geometry and irregular, noisy surfaces. Scaling existing small-scale 3D reconstruction methods to arbitrarily large urban scenes is highly infeasible due to their computational complexity.",
     "We present City-Mesh3R, a scalable framework for reconstructing watertight surface meshes directly from large unordered image collections. Unlike recent methods which use global sparse SfM point-cloud initialization followed by a distributed 3D dense reconstruction of large-scale scenes, our method follows an end-to-end images-to-mesh 3D reconstruction approach using a divide-and-conquer strategy. The sparse city map is reconstructed via topological image clustering, cluster-wise independent sparse SfM and map merging, without need for exhaustive image feature matching.",
@@ -143,8 +154,11 @@ window.CITYMESH3R_DATA = {
     sliderAnimation: {
       min: 0.1,    // left limit = 20%
       max: 0.9,    // right limit = 80%
-      speed: 0.50  // slider-width units per second
-    }
+      speed: 0.50,  // slider-width units per second
+      enabledByDefault: false,
+      label: "Animate Slider",
+      activeLabel: "Stop Animation"
+      }
   },
 
   videos: {
@@ -156,7 +170,7 @@ window.CITYMESH3R_DATA = {
     cameraWalkthrough: {
       id: "camera-walkthrough",
       controls: { showControls: false, autoplayOnVisible: true },
-      sliderAnimation: { min: 0.2, max: 0.8, speed: 0.50 },
+      sliderAnimation: { min: 0.1, max: 0.9, speed: 0.50 },
       scenes: [
         {
           id: "residence",
@@ -264,6 +278,11 @@ window.CITYMESH3R_DATA = {
 
   paperQualitative: {
     id: "paper-qualitative",
+  
+    sliderAnimation: {
+      enabledByDefault: true,
+    },
+    
     baselines: [
       { key: "citygsv2", label: "CityGS-v2", color: "#8b5cf6" },
       { key: "citygsx", label: "CityGS-X", color: "#f97316" }
@@ -271,7 +290,7 @@ window.CITYMESH3R_DATA = {
     scenes: [
       {
         id: "cuhk-lower",
-        title: "GauU-Scene CUHK-LOWER",
+        title: "CUHK-LOWER",
         metadata: { Dataset: "GauU-Scene", Scene: "CUHK-LOWER", "#Images": 670, Area: "1.02 sq.km." },
         views: [
           {
@@ -310,7 +329,7 @@ window.CITYMESH3R_DATA = {
       },
       {
         id: "cuhk_upper",
-        title: "GauU-Scene CUHK_UPPER",
+        title: "CUHK_UPPER",
         metadata: { Dataset: "GauU-Scene", Scene: "CUHK_UPPER", "#Images": 715, Area: "0.923 sq.km."},
         views: [
           {
@@ -352,7 +371,7 @@ window.CITYMESH3R_DATA = {
 
       {
         id: "sziit",
-        title: "GauU-Scene SZIIT",
+        title: "SZIIT",
         metadata: { Dataset: "GauU-Scene", Scene: "SZIIT", "#Images": 1215, Area: "1.557 sq.km." },
         views: [
           {
@@ -392,7 +411,7 @@ window.CITYMESH3R_DATA = {
       
       {
         id: "residence",
-        title: "UrbanScene3D Residence",
+        title: "Residence",
         metadata: { Dataset: "UrbanScene3D", Scene: "Residence", "#Images": "2582", Area: "0.1 sq.km."},
         views: [
           {

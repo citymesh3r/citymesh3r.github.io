@@ -44,6 +44,10 @@
     img.alt = label || "comparison image";
     img.dataset.src = media.src;
     img.dataset.loaded = "0";
+    img.addEventListener("error", () => {
+      const repl = makePlaceholder(label || "Image unavailable", media.color, "Could not load image file");
+      try { img.replaceWith(repl); } catch (_) {}
+    }, { once: true });
     return img;
   }
 
@@ -172,6 +176,7 @@
     root.loadMedia = () => loadMedia(root);
     root.unloadMedia = () => unloadMedia(root);
     root.getVideos = () => Array.from(root.querySelectorAll("video"));
+    root.getImages = () => Array.from(root.querySelectorAll("img"));
     root.setRatio = (ratio) => setRatio(root, ratio);
     root.setTop = (media, label) => {
       top.innerHTML = "";
@@ -308,6 +313,44 @@
     return Promise.all(playable.map(v => waitForVideoReady(v, opts)));
   }
 
+  function waitForImageReady(img, opts = {}) {
+    const timeoutMs = Number(opts.timeoutMs || 30000);
+    return new Promise(resolve => {
+      if (!img || img.tagName !== "IMG") return resolve({ ok: false, reason: "not-image", img });
+      if (img.complete && img.naturalWidth > 0) return resolve({ ok: true, reason: "already-ready", img });
+      let done = false;
+      const cleanup = () => {
+        img.removeEventListener("load", onLoad);
+        img.removeEventListener("error", onError);
+        clearTimeout(timer);
+      };
+      const finish = (ok, reason) => {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve({ ok, reason, img });
+      };
+      const onLoad = () => finish(true, "load");
+      const onError = () => finish(false, "error");
+      const timer = setTimeout(() => finish(img.complete && img.naturalWidth > 0, "timeout"), timeoutMs);
+      img.addEventListener("load", onLoad);
+      img.addEventListener("error", onError);
+      if (!img.src && img.dataset?.src) img.src = img.dataset.src;
+    });
+  }
+
+  function preloadImageGroup(images, opts = {}) {
+    const imgs = (images || []).filter(img => img && img.tagName === "IMG");
+    imgs.forEach(img => {
+      if (img.dataset?.loaded === "0" && img.dataset?.src) {
+        img.src = img.dataset.src;
+        img.dataset.loaded = "1";
+      }
+    });
+    if (!imgs.length) return Promise.resolve([]);
+    return Promise.all(imgs.map(img => waitForImageReady(img, opts)));
+  }
+
   function createSliderAnimation(sliders, opts = {}) {
     const list = (sliders || []).filter(Boolean);
     let raf = 0;
@@ -361,12 +404,33 @@
     const master = playable[0];
     let internal = false;
     let destroyed = false;
+    let looping = false;
+    const groupLoop = opts.loop !== false;
+    if (groupLoop) playable.forEach(v => { try { v.loop = false; } catch (_) {} });
 
     const safePlay = (v) => {
       if (!v || destroyed) return;
       try { v.play().catch(() => {}); } catch (_) {}
     };
     const safePause = (v) => { try { v.pause(); } catch (_) {} };
+
+    const restartGroupLoop = () => {
+      if (destroyed || looping || !groupLoop) return;
+      looping = true;
+      playable.forEach(v => { try { v.pause(); } catch (_) {} });
+      playable.forEach(v => { try { v.currentTime = 0; } catch (_) {} });
+      setTimeout(() => {
+        if (!destroyed) playable.forEach(safePlay);
+        looping = false;
+      }, 80);
+    };
+
+    const maybeLoopNearEnd = () => {
+      if (!groupLoop || destroyed || looping) return;
+      const dur = master.duration;
+      if (!Number.isFinite(dur) || dur <= 0 || master.paused) return;
+      if (dur - master.currentTime < 0.08) restartGroupLoop();
+    };
 
     const syncToMaster = () => {
       if (internal || destroyed) return;
@@ -381,7 +445,7 @@
       internal = false;
     };
 
-    const onMasterTimeUpdate = syncToMaster;
+    const onMasterTimeUpdate = () => { maybeLoopNearEnd(); syncToMaster(); };
     const onMasterSeeked = syncToMaster;
     const onMasterPlay = () => playable.forEach(v => { if (v !== master) safePlay(v); });
     const onMasterPause = () => playable.forEach(v => { if (v !== master) safePause(v); });
@@ -398,6 +462,7 @@
     };
 
     master.addEventListener("timeupdate", onMasterTimeUpdate);
+    master.addEventListener("ended", restartGroupLoop);
     master.addEventListener("seeked", onMasterSeeked);
     master.addEventListener("play", onMasterPlay);
     master.addEventListener("pause", onMasterPause);
@@ -430,6 +495,7 @@
         destroyed = true;
         playable.forEach(safePause);
         master.removeEventListener("timeupdate", onMasterTimeUpdate);
+        master.removeEventListener("ended", restartGroupLoop);
         master.removeEventListener("seeked", onMasterSeeked);
         master.removeEventListener("play", onMasterPlay);
         master.removeEventListener("pause", onMasterPause);
@@ -489,6 +555,7 @@
     syncVideos,
     waitForVideoGroupReady,
     preloadVideoGroupFully,
+    preloadImageGroup,
     createSliderAnimation,
     observeLazy,
     hasPath,
