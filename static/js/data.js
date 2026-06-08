@@ -40,7 +40,7 @@ window.CITYMESH3R_DATA = {
   },
 
   authors: [
-    { name: "Sayan Paul", href: "" },
+    { name: "Sayan Paul", href: "https://sayanpaul.com" },
     { name: "Sourav Ghosh", href: "" },
     { name: "Siddharth Katageri", href: "" },
     { name: "Soumyadip Maity", href: "" },
