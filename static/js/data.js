@@ -6,8 +6,8 @@ window.CITYMESH3R_DATA = {
   },
 
   analytics: {
-    enabled: false,
-    googleTagId: "G-XXXXXXXXXX"
+    enabled: true,
+    googleTagId: "G-FLYJB7PVDW"
   },
 
   nav: {
@@ -29,7 +29,9 @@ window.CITYMESH3R_DATA = {
       href: "https://usm3d.github.io/"
     },
     links: [
-      { label: "Paper", icon: "ai ai-arxiv", href: "https://arxiv.org/abs/2605.30310" },
+      { label: "Arxiv Paper", icon: "ai ai-arxiv", href: "https://arxiv.org/abs/2605.30310" },
+      { label: "CVF Paper", icon: "fas fa-file-pdf", href: "https://openaccess.thecvf.com/content/CVPR2026W/USM3D/papers/Paul_City-Mesh3R_Simulation-Ready_City-Scale_3D_Mesh_Reconstruction_from_Multi-View_Images_CVPRW_2026_paper.pdf" },
+      { label: "Talk Video", icon: "fas fa-video", href: "#talk" },
       { label: "Qualitative Images", icon: "fas fa-image", href: "#image-comparisons" },
       { label: "Qualitative Videos", icon: "fas fa-play", href: "#videos" },
       { label: "BibTeX", icon: "fas fa-quote-right", href: "#bibtex" }
@@ -51,6 +53,10 @@ window.CITYMESH3R_DATA = {
     contributions: {
       title: "Key Ideas",
       text: "A distributed sparse-to-dense pipeline designed for scalable, explicit, simulation-ready city meshes."
+    },
+    cvprTalk: {
+      title: "Talk Video",
+      text: "A 10-minute oral presentation of City-Mesh3R covering motivation, method details, qualitative comparisons, and quantitative results."
     },
     method: {
       title: "Pipeline Overview",
@@ -166,6 +172,21 @@ window.CITYMESH3R_DATA = {
       { key: "citygsv2", label: "CityGS-v2", color: "#8b5cf6" },
       { key: "citygsx", label: "CityGS-X", color: "#f97316" }
     ],
+
+    cvprTalk: {
+      type: "standalone",
+      mount: "cvpr-talk-video",
+      id: "cvpr-talk",
+      title: "CVPR 2026 USM3D Workshop Oral Presentation",
+      enabled: true,
+      metadata: {},
+      video: {
+        src: "static/videos/talk/CityMesh3R_USM3D_CVPR_2026_Talk.mp4",
+        color: "#0ea5e9",
+        label: "City-Mesh3R CVPR 2026 USM3D Workshop Oral Presentation"
+      },
+      controls: { showControls: true, autoplayOnVisible: false, muted: false, loop: false }
+    },
 
     cameraWalkthrough: {
       id: "camera-walkthrough",
@@ -543,14 +564,22 @@ window.CITYMESH3R_DATA = {
   }
 ],
 
-  bibtex: `@misc{paul2026citymesh3rsimulationreadycityscale3d,
-      title={City-Mesh3R: Simulation-Ready City-Scale 3D Mesh Reconstruction from Multi-View Images}, 
-      author={Sayan Paul and Sourav Ghosh and Siddharth Katageri and Soumyadip Maity and Sanjana Sinha and Brojeshwar Bhowmick},
-      year={2026},
-      eprint={2605.30310},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2605.30310}, 
+//   bibtex: `@misc{paul2026citymesh3rsimulationreadycityscale3d,
+//       title={City-Mesh3R: Simulation-Ready City-Scale 3D Mesh Reconstruction from Multi-View Images}, 
+//       author={Sayan Paul and Sourav Ghosh and Siddharth Katageri and Soumyadip Maity and Sanjana Sinha and Brojeshwar Bhowmick},
+//       year={2026},
+//       eprint={2605.30310},
+//       archivePrefix={arXiv},
+//       primaryClass={cs.CV},
+//       url={https://arxiv.org/abs/2605.30310}, 
+// }`,
+bibtex: `@InProceedings{Paul_2026_CVPR,
+    author    = {Paul, Sayan and Ghosh, Sourav and Katageri, Siddharth and Maity, Soumyadip and Sinha, Sanjana and Bhowmick, Brojeshwar},
+    title     = {City-Mesh3R: Simulation-Ready City-Scale 3D Mesh Reconstruction from Multi-View Images},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
+    month     = {June},
+    year      = {2026},
+    pages     = {49-58}
 }`,
 
   footer: "This website has been crafted with ♥️ by us, inspired from academic project pages of CityGS-v2 and CityGS-X."
